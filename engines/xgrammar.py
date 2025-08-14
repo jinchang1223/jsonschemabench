@@ -17,6 +17,7 @@ from core.types import (
     CompileStatusCode,
     DecodingStatusCode,
 )
+from recorder.xgrammar_recorder import XGrammarDecodingRecorder
 
 
 if TYPE_CHECKING:
@@ -71,7 +72,10 @@ class XGrammarEngine(Engine[XGrammarConfig]):
         from xgrammar.contrib.hf import LogitsProcessor as XGrammarLogitsProcessor
 
         timing_processor = TimingLogitsProcessor()
-        logits_processors = [timing_processor]
+        compiled_grammar = self.grammar_compiler.compile_json_schema(dumps(output.schema))
+        decoding_recorder = XGrammarDecodingRecorder(self.tokenizer, compiled_grammar, save_log=True)
+
+        logits_processors = [timing_processor, decoding_recorder]
 
         try:
             json_schema_str = dumps(output.schema)
@@ -183,6 +187,11 @@ class XGrammarEngine(Engine[XGrammarConfig]):
 
         if timing_processor.timestamps:
             output.metadata.first_token_arrival_time = timing_processor.timestamps[0]
+
+        # Add decoding details
+        decoding_history = decoding_recorder.get_decoding_history()
+        if decoding_history:
+            output.decoding_history = decoding_history
 
         output.generation = output_text
         output.token_usage.output_tokens = self.count_tokens(output_text)

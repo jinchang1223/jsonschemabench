@@ -164,3 +164,4 @@ class GenerationOutput:
     token_usage: TokenUsage = field(default_factory=TokenUsage)
     perf_metrics: PerfMetrics = field(default_factory=PerfMetrics)
     metadata: GenerationMetadata = field(default_factory=GenerationMetadata)
+    decoding_history: List[Dict[str, Any]] = field(default_factory=list)
